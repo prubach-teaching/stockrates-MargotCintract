@@ -1,0 +1,67 @@
+import java.io.*;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class Homework3 {
+    public static void getAndProcessChange(String stock) throws IOException {
+        File tmpDir = new File("data_in/"+stock+".csv");
+        boolean exists = tmpDir. exists();
+        if(exists==false){
+            String filePath = "data_in/" + stock + ".csv";
+            download("https://query1.finance.yahoo.com/v7/finance/download/" + stock +
+                            "?period1=1554504399&period2=1586126799&interval=1d&events=history",
+                    filePath);
+
+            String[] row;
+            ArrayList<String>EachLine=new ArrayList<>();
+            ArrayList<Double> open=new ArrayList<>();
+            ArrayList<Double> close=new ArrayList<>();
+            ArrayList<String> perc=new ArrayList<>();
+
+            try(Scanner scanner = new Scanner(Paths.get("data_in/"+stock+".csv"))) {
+                while (scanner.hasNextLine()) {
+                    String myLine = scanner.nextLine();
+                    row = myLine.split(",");
+                    EachLine.add(myLine);
+                    if (!(row[1].equals("Open"))) {
+                        double op = Double.valueOf(row[1]);
+                        open.add(op);
+                    }
+                    if (!(row[4].equals("Close"))) {
+                        double cl = Double.valueOf(row[4]);
+                        close.add(cl);
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+            for(int i=0;i<open.size();i++){
+                perc.add(Double.toString(100.0*(open.get(i)-close.get(i))/open.get(i)));
+            }
+            FileWriter fw=new FileWriter("data_out/"+stock+".csv");
+            BufferedWriter bw=new BufferedWriter(fw);
+            for(int j=0;j<EachLine.size();j++){
+                bw.write(EachLine.get(j)+perc.get(j));
+            }
+            bw.close();
+            fw.close();
+        }
+
+    }
+    public static void download(String url, String fileName) throws IOException {
+        try (InputStream in = URI.create(url).toURL().openStream()) {
+            Files.copy(in, Paths.get(fileName));
+        }
+    }
+
+
+    public static void main(String[] args) throws IOException {
+        String[] stocks = new String[] { "IBM", "MSFT", "GOOG" };
+        for (String s : stocks) {
+            getAndProcessChange(s);
+        }
+    }
+}
